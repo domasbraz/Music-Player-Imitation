@@ -22,24 +22,39 @@ public class DoublyLinkedListApp {
          * */
 
         LinearListInterface myDll = new DLList();
-        myDll.add(1, "Bill");
-        myDll.add(2, "Alice");
-        myDll.add(3, "Elena");
-        myDll.add(4, "Paul");
-        myDll.add(3, "Danny");
-        myDll.add(1, "AnnMarie");
-        
-        System.out.println(myDll.printList());
-        //System.out.println("index: " + myDll.getIndex("Danny"));
-        System.out.println(myDll.getIndex("Danny"));
-        
-        myDll.sendForward("Danny");
-        
-        System.out.println(myDll.printList());
-        
-        myDll.sendBackward("Danny");
-        
-        System.out.println(myDll.printList());
+//        myDll.add(1, "Bill");
+//        myDll.add(2, "Alice");
+//        myDll.add(3, "Elena");
+//        myDll.add(4, "Paul");
+//        myDll.add(3, "Danny");
+//        myDll.add(1, "AnnMarie");
+//        
+//        System.out.println(myDll.printList());
+//        //System.out.println("index: " + myDll.getIndex("Danny"));
+//        System.out.println(myDll.getIndex("Danny"));
+//        
+//        myDll.sendForward("Danny");
+//        
+//        System.out.println(myDll.printList());
+//        
+//        myDll.sendBackward("Danny");
+//        
+//        System.out.println(myDll.printList());
+//        
+//        myDll.sendForward("Paul");
+//        
+//        System.out.println(myDll.printList());
+//        
+//        myDll.sendBackward("AnnMarie");
+//        
+//        System.out.println(myDll.printList());
+
+            myDll.add(1, "Harry");
+            
+            myDll.remove(1);
+            
+            System.out.println("end");
+
 
 //        System.out.println("The size of the list is " + String.valueOf(myDll.size()));
 //        System.out.println("Listing the Elements:");

@@ -29,5 +29,9 @@ public interface LinearListInterface {
     
     public void sendForward(String name);
     
+//    public void sendForward(int index);
+    
     public void sendBackward(String name);
+    
+    public void replace(String oldName, String newName);
 }

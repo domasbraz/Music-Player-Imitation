@@ -79,17 +79,19 @@ public class DLList implements LinearListInterface
     {
         if (iSize > 0)
         {
+            // If the item is the last node, then last becomes the previous node in relation to the currently last node
+            if (iIndex == iSize)
+            {
+                head = null;
+                last = null;
+            }
             // If the first item (head) is to be removed, then head becomes the next node after currently first node
-            if (iIndex == 1)
+            else if (iIndex == 1)
             {
                 head = head.getNext();
                 head.setPrev(null);
             } // If the item is the last node, then last becomes the previous node in relation to the currently last node
-            else if (iIndex == iSize)
-            {
-                last = last.getPrev();
-                last.setNext(null);
-            } else
+            else
             {
                 // If the item is not the last or the first node, then the element to be removed is in the middle
                 setCurrent(iIndex);
@@ -173,15 +175,53 @@ public class DLList implements LinearListInterface
         int index = getIndex(name);
         setCurrent(index);
         remove(index);
-        add((index + 1), name);
+        if (currNode == null)
+        {
+            add(index, name);
+        }
+        else
+        {
+            add((index + 1), name);
+        }
+
     }
+    
+//    public void sendForward(int index)
+//    {
+//        setCurrent(index);
+//        remove(index);
+//        if (currNode == null)
+//        {
+//            add(index, currNode.toString());
+//        }
+//        else
+//        {
+//            add((index + 1), currNode.toString());
+//        }
+//    }
     
     public void sendBackward(String name)
     {
         int index = getIndex(name);
         setCurrent(index);
         remove(index);
-        add((index - 1), name);
+        if (index > 1)
+        {
+            add((index - 1), name);
+        }
+        else
+        {
+            add(index, name);
+        }
+        
+    }
+    
+    public void replace(String oldName, String newName)
+    {
+        int index = getIndex(oldName);
+        setCurrent(index);
+        remove(index);
+        add(index, newName);
     }
 }
 
