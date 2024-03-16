@@ -30,5 +30,11 @@ public interface StackInterface {
     
     public ArrayList<String[]> getStack();
     
-    public void remove(String name);
+    public void remove(String[] name);
+    
+    public String[] getValue(int index);
+    
+    public String printAll();
+    
+    public int getIndex(String[] name);
 }

@@ -49,11 +49,17 @@ public class DoublyLinkedListApp {
 //        
 //        System.out.println(myDll.printList());
 
-            myDll.add(1, "Harry");
+//            myDll.add(1, "Harry");
+//            
+//            myDll.remove(1);
             
-            myDll.remove(1);
+            myDll.add(1, "a");
+            myDll.add(2, "b");
+            myDll.add(3, "c");
+            myDll.remove(myDll.getIndex("h"));
+            //myDll.add(2, "c");
             
-            System.out.println("end");
+            System.out.println(myDll.printList());
 
 
 //        System.out.println("The size of the list is " + String.valueOf(myDll.size()));

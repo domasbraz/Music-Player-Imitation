@@ -75,38 +75,68 @@ public class DLList implements LinearListInterface
         iSize++;
     }
 
-    public void remove(int iIndex)
-    {
-        if (iSize > 0)
-        {
-            // If the item is the last node, then last becomes the previous node in relation to the currently last node
-            if (iIndex == iSize)
-            {
-                head = null;
-                last = null;
-            }
-            // If the first item (head) is to be removed, then head becomes the next node after currently first node
-            else if (iIndex == 1)
-            {
-                head = head.getNext();
-                head.setPrev(null);
-            } // If the item is the last node, then last becomes the previous node in relation to the currently last node
-            else
-            {
-                // If the item is not the last or the first node, then the element to be removed is in the middle
-                setCurrent(iIndex);
-                DlNode prev = currNode.getPrev();
-                DlNode next = currNode.getNext();
-                prev.setNext(next);
-                next.setPrev(prev);
-            }
-            currNode = null;
-            iSize--;
-        } else
-        {
-            System.out.println("The list is empty. No Nodes to be removed");
+//    public void remove(int iIndex)
+//    {
+//        if (iSize > 0)
+//        {
+//            // If the item is the last node, then last becomes the previous node in relation to the currently last node
+//            if (iIndex == iSize)
+//            {
+//                last = last.getPrev();
+//                last.setNext(null);
+//            }
+//            // If the first item (head) is to be removed, then head becomes the next node after currently first node
+//            else if (iIndex == 1)
+//            {
+//                head = head.getNext();
+//                head.setPrev(null);
+//            } // If the item is the last node, then last becomes the previous node in relation to the currently last node
+//            else
+//            {
+//                // If the item is not the last or the first node, then the element to be removed is in the middle
+//                setCurrent(iIndex);
+//                DlNode prev = currNode.getPrev();
+//                DlNode next = currNode.getNext();
+//                prev.setNext(next);
+//                next.setPrev(prev);
+//            }
+//            currNode = null;
+//            iSize--;
+//        } else
+//        {
+//            System.out.println("The list is empty. No Nodes to be removed");
+//        }
+//    }
+    
+    
+    public void remove(int iIndex) {
+        if (iIndex > 0){
+            if (iSize > 0) {
+                // If the first item (head) is to be removed
+                if (iIndex == 1) {
+                    if (iSize == 1) { // If there's only one node in the list
+                        head = null;
+                        last = null;
+                    } else { // If there are multiple nodes in the list
+                        head = head.getNext();
+                        head.setPrev(null);
+                    }
+                } else if (iIndex == iSize) { // If the last item (last) is to be removed
+                    last = last.getPrev();
+                    last.setNext(null);
+                } else { // If the item is in the middle of the list
+                    setCurrent(iIndex);
+                    DlNode prev = currNode.getPrev();
+                    DlNode next = currNode.getNext();
+                    prev.setNext(next);
+                    next.setPrev(prev);
+                }
+                currNode = null;
+                iSize--;
+            } 
         }
-    }
+}
+
 
     private void setCurrent(int inIndex)
     {
@@ -173,8 +203,8 @@ public class DLList implements LinearListInterface
     public void sendForward(String name)
     {
         int index = getIndex(name);
-        setCurrent(index);
         remove(index);
+        setCurrent(index);
         if (currNode == null)
         {
             add(index, name);
@@ -222,6 +252,26 @@ public class DLList implements LinearListInterface
         setCurrent(index);
         remove(index);
         add(index, newName);
+    }
+    
+    public void removeAll()
+    {
+        while (!isEmpty())
+        {
+            remove(iSize);
+        }
+    }
+    
+    public String printItem(int index)
+    {
+        DlNode node = head;
+        for (int iCount = 1; iCount < index; iCount++)
+        {
+            node = node.getNext();
+        }
+        String name = node.getElement().toString();
+        
+        return name;
     }
 }
 

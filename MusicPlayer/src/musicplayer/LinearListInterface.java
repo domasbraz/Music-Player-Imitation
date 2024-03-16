@@ -34,4 +34,8 @@ public interface LinearListInterface {
     public void sendBackward(String name);
     
     public void replace(String oldName, String newName);
+    
+    public void removeAll();
+    
+    public String printItem(int index);
 }

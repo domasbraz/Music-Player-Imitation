@@ -93,8 +93,49 @@ public class MyStack implements StackInterface {
         return theStack;
     }
     
-    public void remove(String name)
+    public void remove(String[] name)
     {
-        theStack.remove(name);
+        int index = getIndex(name);
+        if (index != -1)
+        {
+            theStack.remove(index);
+        }
+    }
+    
+    public String[] getValue(int index)
+    {
+        return theStack.get(index);
+    }
+    
+    public String printAll()
+    {
+        String output = "";
+        
+        for (String[] array : theStack)
+        {
+            for (String value : array)
+            {
+                output += value;
+            }
+        }
+        return output;
+    }
+    
+    public int getIndex(String[] name)
+    {
+        //so arrays get compared by their possition in memory?! 
+        //therfore i had to make this method
+        String find = name[0];
+        int index = 0;
+        for (String[] item : theStack)
+        {
+            String look = item[0];
+            if (look.equals(find))
+            {
+                return index;
+            }
+            index++;
+        }
+        return -1;
     }
 }
