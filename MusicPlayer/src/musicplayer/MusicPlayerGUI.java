@@ -7,11 +7,13 @@ package musicplayer;
 import java.util.ArrayList;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import javax.swing.ImageIcon;
 import javax.swing.JOptionPane;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableColumn;
+import javax.swing.table.TableColumnModel;
 
 
 /**
@@ -43,14 +45,16 @@ public class MusicPlayerGUI extends javax.swing.JFrame
     private boolean deleteMode = false;
     private JScrollPane currContainer;
     private boolean active = true;
+    private String playlist1Genre;
+    private String playlist2Genre;
+    private boolean songPlaying = false;
+    private boolean repeat = false;
     
     
     public MusicPlayerGUI()
     {
         defaultMethod();
 
-        //this button is made for testing purposes
-        checkDll.setVisible(false);
         
     }
 
@@ -65,11 +69,15 @@ public class MusicPlayerGUI extends javax.swing.JFrame
         hideElements();
         currPlaylist = defaultPlaylist;
         lblPlaylistName.setText("All Songs");
-        likePlaylistScrollPane.setVisible(false);
         currContainer = defaultPlaylistScrollPane;
-        playlist1ScrollPane.setVisible(false);
-        pnlPlaylistPrompt.setVisible(false);
         
+        TableColumnModel columnModel = defaultPlaylist.getColumnModel();
+        columnModel.getColumn(1).setPreferredWidth(50);
+        
+        btnPlay.setIcon(new ImageIcon("src/musicplayer/Play.png"));
+        btnNext.setIcon(new ImageIcon("src/musicplayer/next.png"));
+        btnLast.setIcon(new ImageIcon("src/musicplayer/last.png"));
+        btnRepeat.setIcon(new ImageIcon("src/musicplayer/repeatOff.png"));
     }
     
     public void hideElements()
@@ -78,6 +86,13 @@ public class MusicPlayerGUI extends javax.swing.JFrame
         pnlAddSong.setVisible(false);
         btnFinishDelete.setVisible(false);
         lblDeleteHelp.setVisible(false);
+        likePlaylistScrollPane.setVisible(false);
+        playlist1ScrollPane.setVisible(false);
+        pnlPlaylistPrompt.setVisible(false);
+        btnAddToPlaylist.setVisible(false);
+        playlist2ScrollPane.setVisible(false);
+        lblPlaying.setVisible(false);
+        lblSongPlaying.setVisible(false);
     }
     
     public void makeTableModels()
@@ -87,7 +102,7 @@ public class MusicPlayerGUI extends javax.swing.JFrame
             {},
             new String []
             {
-                "Name", "Genre", "Add to Liked", "Move", "Move"
+                "Name", "Genre", "", "Move", "Move"
             }
         );
         
@@ -95,11 +110,19 @@ public class MusicPlayerGUI extends javax.swing.JFrame
                 new Object[][] {},
                 new String[]
                 {
-                    "Name","Genre","Add to Playlist"
+                    "Name","Genre"
                 }
         );
         
         playlist1TableModel = new DefaultTableModel(
+                new Object[][]{},
+                new String[]
+                {
+                    "Name", "Genre", "Remove From Playlist", "Move", "Move"
+                }
+        );
+        
+        playlist2TableModel = new DefaultTableModel(
                 new Object[][]{},
                 new String[]
                 {
@@ -255,6 +278,10 @@ public class MusicPlayerGUI extends javax.swing.JFrame
         {
             return isSearchDll ? dllAllSongsSearch : dllAllSongs;
         }
+        if (currPlaylist == likedPlaylist)
+        {
+            return dllPlaylist1;
+        }
         if (currPlaylist == playlist1)
         {
             return isSearchDll ? dllPlaylist1Search : dllPlaylist1;
@@ -295,7 +322,6 @@ public class MusicPlayerGUI extends javax.swing.JFrame
 
                     String[] data = getSongInfo(table, song);
                     tableModel.insertRow(x, data);
-
                 }
             }
         }
@@ -309,7 +335,7 @@ public class MusicPlayerGUI extends javax.swing.JFrame
                 {
                     String[] song = likedSongsSearch.getValue(x);
 
-                    String[] data = {song[0], song[1], "<html><b>[Add]</></>"};
+                    String[] data = {song[0], song[1]};
                     tableModel.insertRow(x, data);
                 }
             }
@@ -322,13 +348,13 @@ public class MusicPlayerGUI extends javax.swing.JFrame
                 {
                     String[] song = likedSongs.getValue(x);
 
-                    String[] data = {song[0], song[1], "<html><b>[Add]</></>"};
+                    String[] data = {song[0], song[1]};
                     tableModel.insertRow(x, data);
 
                 }
             }
         }
-
+        updatePlaylistLabel();
     }
     
     public String[] getSongInfo(JTable table, String[] song)
@@ -338,10 +364,14 @@ public class MusicPlayerGUI extends javax.swing.JFrame
         {
             return new String[] {song[0], song[1], song[2], "<html><b>[Up]</b></html>", "<html><b>[Down]</b></html>"};
         }
+        else
+        {
+            return new String[] {song[0], song[1], "<html><b>[Remove]</></>", "<html><b>[Up]</b></html>", "<html><b>[Down]</b></html>"};
+        }
         
         
         
-        return null;
+        
     }
     
     public void emptyTable(JTable table)
@@ -357,15 +387,26 @@ public class MusicPlayerGUI extends javax.swing.JFrame
     public void linkTable(String[] data, JTable table)
     {
         int songCount = table.getRowCount();
-        String item = data[0] +  "%" + data[1] + "%" + data[2];
+        String item;
+        if (table == defaultPlaylist)
+        {
+            item = data[0] +  "%" + data[1] + "%" + data[2];
+        }
+        else
+        {
+            item = data[0] + "%" + data[1];
+        }
         whichTableDll(false).add(songCount, item);
     }
     
     public String getValueAtRow(int row, JTable table)
     {
         String data = table.getValueAt(row, 0).toString() + "%";
-        data += table.getValueAt(row, 1).toString() + "%";
-        data += table.getValueAt(row, 2).toString();
+        data += table.getValueAt(row, 1).toString();
+        if (table == defaultPlaylist)
+        {
+            data += "%" + table.getValueAt(row, 2).toString();
+        }
         return data;
     }
     
@@ -377,7 +418,7 @@ public class MusicPlayerGUI extends javax.swing.JFrame
             {
                 String value = table.getValueAt(row, col).toString();
 
-                if (value.equalsIgnoreCase("<html><b>[Like]</b></html>") || value.equalsIgnoreCase("<html><b>[Liked]</b></html>"))
+                if (value.equalsIgnoreCase("<html><b>[Like]</b></html>") || value.equalsIgnoreCase("<html><b>[Remove <br>from Liked]</b></html>"))
                 {
                     likeSongOperation(value, row, col, table);
                 }
@@ -394,11 +435,33 @@ public class MusicPlayerGUI extends javax.swing.JFrame
                     moveSongDown(name);
                     updateTable(table, searchActive);
                 }
-                else if (value.equalsIgnoreCase("<html><b>[Add]</></>"))
+                else if (value.equalsIgnoreCase("<html><b>[Remove]</></>"))
                 {
-                    pnlPlaylistPrompt.setVisible(true);
-                    active = false;
+                    String name = getValueAtRow(row, table);
+                    if (searchActive)
+                    {
+                        LinearListInterface dllSearch = whichTableDll(true);
+                        dllSearch.remove(dllSearch.getIndex(name));
+                    }
+                    LinearListInterface dll = whichTableDll(false);
+                    dll.remove(dll.getIndex(name));
+                    updateTable(table, searchActive);
+                    
+                    String oldName = name + "%<html><b>[Playlist 1]</></>";
+                    
+                    String newName = name + "%<html><b>[Like]</b></html>";
+                    
+                    dllAllSongs.replace(oldName, newName);
                 }
+                else if (value.equalsIgnoreCase("<html><b>[Playlist 1]</></>"))
+                {
+                    switchTable(playlist1, playlist1ScrollPane);
+                }
+                else if (value.equalsIgnoreCase("<html><b>[Playlist 2]</></>"))
+                {
+                    switchTable(playlist2, playlist2ScrollPane);
+                }
+                
             }
             else
             {
@@ -414,11 +477,11 @@ public class MusicPlayerGUI extends javax.swing.JFrame
         {
             likeSong(row);
             String oldData = getValueAtRow(row, table);
-            table.setValueAt("<html><b>[Liked]</b></html>", row, col);
+            table.setValueAt("<html><b>[Remove <br>from Liked]</b></html>", row, col);
             String newData = getValueAtRow(row, table);
             whichTableDll(false).replace(oldData, newData);
         }
-        else if (value.equalsIgnoreCase("<html><b>[Liked]</b></html>"))
+        else if (value.equalsIgnoreCase("<html><b>[Remove <br>from Liked]</b></html>"))
         {
             String[] name = new String[2];
             name[0] = table.getValueAt(row, 0).toString();
@@ -490,7 +553,7 @@ public class MusicPlayerGUI extends javax.swing.JFrame
         if (currPlaylist == likedPlaylist)
         {
             String[] nameArray = name.split("%");
-            nameArray[2] = "%" + "<html><b>[Liked]</b></html>";
+            nameArray[2] = "%" + "<html><b>[Remove <br>from Liked]</b></html>";
             name = nameArray[0] + "%" + nameArray[1] + nameArray[2];
         }
         
@@ -517,27 +580,47 @@ public class MusicPlayerGUI extends javax.swing.JFrame
         container.setVisible(true);
         currContainer = container;
         currPlaylist = table;
-        updatePlaylistLabel();
         updateTable(currPlaylist, searchActive);
+        active = true; //failsafe
+        btnAddToPlaylist.setVisible(false); //failsafe
+        updatePlaylistLabel();
+        
+
     }
     
     public void updatePlaylistLabel()
     {
         if (currPlaylist == defaultPlaylist)
         {
-            lblPlaylistName.setText("All Songs");
+            lblPlaylistName.setText("All Songs: " + currPlaylist.getRowCount());
         }
         else if (currPlaylist == likedPlaylist)
         {
-            lblPlaylistName.setText("Liked Songs");
+            lblPlaylistName.setText("Liked Songs: " + currPlaylist.getRowCount());
         }
         else if (currPlaylist == playlist1)
         {
-            lblPlaylistName.setText("Playlist 1");
+            lblPlaylistName.setText("Playlist 1: " + currPlaylist.getRowCount());
         }
+        else if (currPlaylist == playlist2)
+        {
+            lblPlaylistName.setText("Playlist 2: " + currPlaylist.getRowCount());
+        }
+        
     }
     
-    
+    public int find (JTable table, String name)
+    {
+        for (int x = 0; x < table.getRowCount(); x++)
+        {
+            String value = table.getValueAt(x, 0).toString();
+            if (name.equalsIgnoreCase(value))
+            {
+                return x;
+            }
+        }
+        return -1;
+    }
 
     /**
      * This method is called from within the constructor to initialize the form.
@@ -572,7 +655,12 @@ public class MusicPlayerGUI extends javax.swing.JFrame
         btnSearch = new javax.swing.JButton();
         btnDelete = new javax.swing.JButton();
         pnlPlaySection = new javax.swing.JPanel();
-        checkDll = new javax.swing.JButton();
+        lblPlaying = new javax.swing.JLabel();
+        btnPlay = new javax.swing.JButton();
+        btnNext = new javax.swing.JButton();
+        btnLast = new javax.swing.JButton();
+        btnRepeat = new javax.swing.JButton();
+        lblSongPlaying = new javax.swing.JLabel();
         lblDeleteHelp = new javax.swing.JLabel();
         btnFinishDelete = new javax.swing.JButton();
         likePlaylistScrollPane = new javax.swing.JScrollPane();
@@ -582,6 +670,10 @@ public class MusicPlayerGUI extends javax.swing.JFrame
         pnlPlaylistPrompt = new javax.swing.JPanel();
         btnAddToPlaylist1 = new javax.swing.JButton();
         btnAddToPlaylist2 = new javax.swing.JButton();
+        btnAddPlaylistCancel = new javax.swing.JButton();
+        btnAddToPlaylist = new javax.swing.JButton();
+        playlist2ScrollPane = new javax.swing.JScrollPane();
+        playlist2 = new javax.swing.JTable();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         setResizable(false);
@@ -599,8 +691,8 @@ public class MusicPlayerGUI extends javax.swing.JFrame
         defaultPlaylist.setFont(new java.awt.Font("Segoe UI", 0, 18)); // NOI18N
         defaultPlaylist.setForeground(new java.awt.Color(255, 255, 255));
         defaultPlaylist.setModel(defaultPlaylistTableModel);
-        defaultPlaylist.setRowHeight(40);
         playlists.add(defaultPlaylist);
+        defaultPlaylist.setRowHeight(60);
         defaultPlaylistScrollPane.setViewportView(defaultPlaylist);
 
         btnMenu.setText("Menu");
@@ -819,25 +911,83 @@ public class MusicPlayerGUI extends javax.swing.JFrame
 
         pnlPlaySection.setBackground(new java.awt.Color(200, 230, 250));
 
+        lblPlaying.setFont(new java.awt.Font("Segoe UI", 0, 18)); // NOI18N
+        lblPlaying.setForeground(new java.awt.Color(0, 0, 0));
+        lblPlaying.setText("<html><b>Playing:</>");
+
+        btnPlay.addActionListener(new java.awt.event.ActionListener()
+        {
+            public void actionPerformed(java.awt.event.ActionEvent evt)
+            {
+                btnPlayActionPerformed(evt);
+            }
+        });
+
+        btnNext.addActionListener(new java.awt.event.ActionListener()
+        {
+            public void actionPerformed(java.awt.event.ActionEvent evt)
+            {
+                btnNextActionPerformed(evt);
+            }
+        });
+
+        btnLast.addActionListener(new java.awt.event.ActionListener()
+        {
+            public void actionPerformed(java.awt.event.ActionEvent evt)
+            {
+                btnLastActionPerformed(evt);
+            }
+        });
+
+        btnRepeat.addActionListener(new java.awt.event.ActionListener()
+        {
+            public void actionPerformed(java.awt.event.ActionEvent evt)
+            {
+                btnRepeatActionPerformed(evt);
+            }
+        });
+
+        lblSongPlaying.setFont(new java.awt.Font("Segoe UI", 0, 18)); // NOI18N
+        lblSongPlaying.setForeground(new java.awt.Color(0, 0, 0));
+        lblSongPlaying.setText("jLabel1");
+
         javax.swing.GroupLayout pnlPlaySectionLayout = new javax.swing.GroupLayout(pnlPlaySection);
         pnlPlaySection.setLayout(pnlPlaySectionLayout);
         pnlPlaySectionLayout.setHorizontalGroup(
             pnlPlaySectionLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 0, Short.MAX_VALUE)
+            .addGroup(pnlPlaySectionLayout.createSequentialGroup()
+                .addGroup(pnlPlaySectionLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(pnlPlaySectionLayout.createSequentialGroup()
+                        .addGap(182, 182, 182)
+                        .addComponent(btnRepeat, javax.swing.GroupLayout.PREFERRED_SIZE, 53, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(53, 53, 53)
+                        .addComponent(btnLast, javax.swing.GroupLayout.PREFERRED_SIZE, 53, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                        .addComponent(btnPlay, javax.swing.GroupLayout.PREFERRED_SIZE, 53, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                        .addComponent(btnNext, javax.swing.GroupLayout.PREFERRED_SIZE, 53, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addGroup(pnlPlaySectionLayout.createSequentialGroup()
+                        .addGap(231, 231, 231)
+                        .addComponent(lblPlaying, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(lblSongPlaying, javax.swing.GroupLayout.PREFERRED_SIZE, 348, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
         pnlPlaySectionLayout.setVerticalGroup(
             pnlPlaySectionLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 100, Short.MAX_VALUE)
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, pnlPlaySectionLayout.createSequentialGroup()
+                .addContainerGap(25, Short.MAX_VALUE)
+                .addGroup(pnlPlaySectionLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(lblPlaying, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(lblSongPlaying))
+                .addGap(18, 18, 18)
+                .addGroup(pnlPlaySectionLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(btnPlay, javax.swing.GroupLayout.PREFERRED_SIZE, 52, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(btnNext, javax.swing.GroupLayout.PREFERRED_SIZE, 52, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(btnLast, javax.swing.GroupLayout.PREFERRED_SIZE, 52, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(btnRepeat, javax.swing.GroupLayout.PREFERRED_SIZE, 52, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addGap(26, 26, 26))
         );
-
-        checkDll.setText("Check dll");
-        checkDll.addActionListener(new java.awt.event.ActionListener()
-        {
-            public void actionPerformed(java.awt.event.ActionEvent evt)
-            {
-                checkDllActionPerformed(evt);
-            }
-        });
 
         lblDeleteHelp.setFont(new java.awt.Font("Segoe UI", 0, 24)); // NOI18N
         lblDeleteHelp.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
@@ -861,8 +1011,9 @@ public class MusicPlayerGUI extends javax.swing.JFrame
         playlists.add(likedPlaylist);
         likePlaylistScrollPane.setViewportView(likedPlaylist);
 
-        playlist1.setBackground(new java.awt.Color(15, 42, 61));
+        playlist1.setBackground(new java.awt.Color(42, 53, 61));
         playlist1.setFont(new java.awt.Font("Segoe UI", 0, 18)); // NOI18N
+        playlist1.setForeground(new java.awt.Color(255, 255, 255));
         playlist1.setModel(playlist1TableModel);
         playlist1.setRowHeight(40);
         playlists.add(playlist1);
@@ -872,9 +1023,33 @@ public class MusicPlayerGUI extends javax.swing.JFrame
 
         btnAddToPlaylist1.setFont(new java.awt.Font("Segoe UI", 0, 24)); // NOI18N
         btnAddToPlaylist1.setText("Add To Playlist 1");
+        btnAddToPlaylist1.addActionListener(new java.awt.event.ActionListener()
+        {
+            public void actionPerformed(java.awt.event.ActionEvent evt)
+            {
+                btnAddToPlaylist1ActionPerformed(evt);
+            }
+        });
 
         btnAddToPlaylist2.setFont(new java.awt.Font("Segoe UI", 0, 24)); // NOI18N
         btnAddToPlaylist2.setText("Add To Playlist 2");
+        btnAddToPlaylist2.addActionListener(new java.awt.event.ActionListener()
+        {
+            public void actionPerformed(java.awt.event.ActionEvent evt)
+            {
+                btnAddToPlaylist2ActionPerformed(evt);
+            }
+        });
+
+        btnAddPlaylistCancel.setFont(new java.awt.Font("Segoe UI", 0, 24)); // NOI18N
+        btnAddPlaylistCancel.setText("Cancel");
+        btnAddPlaylistCancel.addActionListener(new java.awt.event.ActionListener()
+        {
+            public void actionPerformed(java.awt.event.ActionEvent evt)
+            {
+                btnAddPlaylistCancelActionPerformed(evt);
+            }
+        });
 
         javax.swing.GroupLayout pnlPlaylistPromptLayout = new javax.swing.GroupLayout(pnlPlaylistPrompt);
         pnlPlaylistPrompt.setLayout(pnlPlaylistPromptLayout);
@@ -882,20 +1057,40 @@ public class MusicPlayerGUI extends javax.swing.JFrame
             pnlPlaylistPromptLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(pnlPlaylistPromptLayout.createSequentialGroup()
                 .addGap(64, 64, 64)
-                .addGroup(pnlPlaylistPromptLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                    .addComponent(btnAddToPlaylist1)
-                    .addComponent(btnAddToPlaylist2))
+                .addGroup(pnlPlaylistPromptLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
+                    .addComponent(btnAddToPlaylist1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(btnAddToPlaylist2, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(btnAddPlaylistCancel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                 .addContainerGap(77, Short.MAX_VALUE))
         );
         pnlPlaylistPromptLayout.setVerticalGroup(
             pnlPlaylistPromptLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(pnlPlaylistPromptLayout.createSequentialGroup()
-                .addGap(46, 46, 46)
+                .addGap(16, 16, 16)
                 .addComponent(btnAddToPlaylist1, javax.swing.GroupLayout.PREFERRED_SIZE, 67, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(37, 37, 37)
+                .addGap(18, 18, 18)
                 .addComponent(btnAddToPlaylist2, javax.swing.GroupLayout.PREFERRED_SIZE, 67, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(53, Short.MAX_VALUE))
+                .addGap(18, 18, 18)
+                .addComponent(btnAddPlaylistCancel, javax.swing.GroupLayout.PREFERRED_SIZE, 67, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addContainerGap(17, Short.MAX_VALUE))
         );
+
+        btnAddToPlaylist.setFont(new java.awt.Font("Segoe UI", 0, 18)); // NOI18N
+        btnAddToPlaylist.setText("<html>Add to<br>Playlist</>");
+        btnAddToPlaylist.addActionListener(new java.awt.event.ActionListener()
+        {
+            public void actionPerformed(java.awt.event.ActionEvent evt)
+            {
+                btnAddToPlaylistActionPerformed(evt);
+            }
+        });
+
+        playlist2.setBackground(new java.awt.Color(42, 53, 61));
+        playlist2.setForeground(new java.awt.Color(255, 255, 255));
+        playlist2.setModel(playlist2TableModel);
+        playlist2.setRowHeight(40);
+        playlists.add(playlist2);
+        playlist2ScrollPane.setViewportView(playlist2);
 
         jLayeredPane1.setLayer(defaultPlaylistScrollPane, javax.swing.JLayeredPane.DEFAULT_LAYER);
         jLayeredPane1.setLayer(btnMenu, javax.swing.JLayeredPane.DEFAULT_LAYER);
@@ -903,12 +1098,13 @@ public class MusicPlayerGUI extends javax.swing.JFrame
         jLayeredPane1.setLayer(pnlAddSong, javax.swing.JLayeredPane.POPUP_LAYER);
         jLayeredPane1.setLayer(pnlMenu, javax.swing.JLayeredPane.PALETTE_LAYER);
         jLayeredPane1.setLayer(pnlPlaySection, javax.swing.JLayeredPane.MODAL_LAYER);
-        jLayeredPane1.setLayer(checkDll, javax.swing.JLayeredPane.DEFAULT_LAYER);
         jLayeredPane1.setLayer(lblDeleteHelp, javax.swing.JLayeredPane.DRAG_LAYER);
         jLayeredPane1.setLayer(btnFinishDelete, javax.swing.JLayeredPane.DEFAULT_LAYER);
         jLayeredPane1.setLayer(likePlaylistScrollPane, javax.swing.JLayeredPane.DEFAULT_LAYER);
         jLayeredPane1.setLayer(playlist1ScrollPane, javax.swing.JLayeredPane.DEFAULT_LAYER);
         jLayeredPane1.setLayer(pnlPlaylistPrompt, javax.swing.JLayeredPane.MODAL_LAYER);
+        jLayeredPane1.setLayer(btnAddToPlaylist, javax.swing.JLayeredPane.DEFAULT_LAYER);
+        jLayeredPane1.setLayer(playlist2ScrollPane, javax.swing.JLayeredPane.DEFAULT_LAYER);
 
         javax.swing.GroupLayout jLayeredPane1Layout = new javax.swing.GroupLayout(jLayeredPane1);
         jLayeredPane1.setLayout(jLayeredPane1Layout);
@@ -926,52 +1122,58 @@ public class MusicPlayerGUI extends javax.swing.JFrame
                 .addComponent(lblPlaylistName, javax.swing.GroupLayout.PREFERRED_SIZE, 172, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(57, 57, 57)
                 .addComponent(btnFinishDelete)
-                .addGap(33, 33, 33)
-                .addComponent(checkDll)
-                .addGap(30, 30, 30))
+                .addGap(31, 31, 31)
+                .addComponent(btnAddToPlaylist, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(35, 35, 35))
             .addGroup(jLayeredPane1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                 .addGroup(jLayeredPane1Layout.createSequentialGroup()
                     .addComponent(pnlMenu, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addGap(0, 582, Short.MAX_VALUE)))
             .addGroup(jLayeredPane1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                 .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jLayeredPane1Layout.createSequentialGroup()
-                    .addContainerGap(244, Short.MAX_VALUE)
+                    .addContainerGap(261, Short.MAX_VALUE)
                     .addComponent(pnlAddSong, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addContainerGap(238, Short.MAX_VALUE)))
+                    .addContainerGap(255, Short.MAX_VALUE)))
             .addGroup(jLayeredPane1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                 .addGroup(jLayeredPane1Layout.createSequentialGroup()
                     .addGap(187, 187, 187)
                     .addComponent(lblDeleteHelp, javax.swing.GroupLayout.PREFERRED_SIZE, 344, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addContainerGap(269, Short.MAX_VALUE)))
+                    .addContainerGap(303, Short.MAX_VALUE)))
             .addGroup(jLayeredPane1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                 .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jLayeredPane1Layout.createSequentialGroup()
-                    .addContainerGap(141, Short.MAX_VALUE)
+                    .addContainerGap(158, Short.MAX_VALUE)
                     .addComponent(likePlaylistScrollPane, javax.swing.GroupLayout.PREFERRED_SIZE, 543, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addContainerGap(116, Short.MAX_VALUE)))
+                    .addContainerGap(133, Short.MAX_VALUE)))
             .addGroup(jLayeredPane1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                 .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jLayeredPane1Layout.createSequentialGroup()
-                    .addContainerGap(134, Short.MAX_VALUE)
+                    .addContainerGap(151, Short.MAX_VALUE)
                     .addComponent(playlist1ScrollPane, javax.swing.GroupLayout.PREFERRED_SIZE, 552, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addContainerGap(114, Short.MAX_VALUE)))
+                    .addContainerGap(131, Short.MAX_VALUE)))
             .addGroup(jLayeredPane1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                 .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jLayeredPane1Layout.createSequentialGroup()
                     .addContainerGap(256, Short.MAX_VALUE)
                     .addComponent(pnlPlaylistPrompt, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addContainerGap(231, Short.MAX_VALUE)))
+            .addGroup(jLayeredPane1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jLayeredPane1Layout.createSequentialGroup()
+                    .addContainerGap(169, Short.MAX_VALUE)
+                    .addComponent(playlist2ScrollPane, javax.swing.GroupLayout.PREFERRED_SIZE, 537, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addContainerGap(128, Short.MAX_VALUE)))
         );
         jLayeredPane1Layout.setVerticalGroup(
             jLayeredPane1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jLayeredPane1Layout.createSequentialGroup()
-                .addGap(22, 22, 22)
-                .addGroup(jLayeredPane1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(btnMenu, javax.swing.GroupLayout.PREFERRED_SIZE, 43, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(lblPlaylistName, javax.swing.GroupLayout.PREFERRED_SIZE, 43, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(checkDll)
-                    .addComponent(btnFinishDelete))
+                .addContainerGap()
+                .addGroup(jLayeredPane1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                    .addGroup(jLayeredPane1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                        .addComponent(btnMenu, javax.swing.GroupLayout.PREFERRED_SIZE, 43, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addComponent(lblPlaylistName, javax.swing.GroupLayout.PREFERRED_SIZE, 43, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addComponent(btnFinishDelete))
+                    .addComponent(btnAddToPlaylist, javax.swing.GroupLayout.PREFERRED_SIZE, 58, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addComponent(defaultPlaylistScrollPane, javax.swing.GroupLayout.PREFERRED_SIZE, 416, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 18, Short.MAX_VALUE)
-                .addComponent(pnlPlaySection, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addComponent(pnlPlaySection, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
             .addGroup(jLayeredPane1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                 .addComponent(pnlMenu, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
             .addGroup(jLayeredPane1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -999,6 +1201,11 @@ public class MusicPlayerGUI extends javax.swing.JFrame
                     .addContainerGap(150, Short.MAX_VALUE)
                     .addComponent(pnlPlaylistPrompt, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addContainerGap(196, Short.MAX_VALUE)))
+            .addGroup(jLayeredPane1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jLayeredPane1Layout.createSequentialGroup()
+                    .addContainerGap(74, Short.MAX_VALUE)
+                    .addComponent(playlist2ScrollPane, javax.swing.GroupLayout.PREFERRED_SIZE, 419, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addContainerGap(123, Short.MAX_VALUE)))
         );
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
@@ -1031,6 +1238,7 @@ public class MusicPlayerGUI extends javax.swing.JFrame
         // TODO add your handling code here:
         pnlMenu.setVisible(false);
         pnlAddSong.setVisible(true);
+        active = false;
     }//GEN-LAST:event_btnAddSongActionPerformed
 
     private void btnViewLikedActionPerformed(java.awt.event.ActionEvent evt)//GEN-FIRST:event_btnViewLikedActionPerformed
@@ -1040,6 +1248,7 @@ public class MusicPlayerGUI extends javax.swing.JFrame
             switchTable(likedPlaylist, likePlaylistScrollPane);
         }
         pnlMenu.setVisible(false);
+        btnAddToPlaylist.setVisible(true);
     }//GEN-LAST:event_btnViewLikedActionPerformed
 
     private void btnViewPlaylist1ActionPerformed(java.awt.event.ActionEvent evt)//GEN-FIRST:event_btnViewPlaylist1ActionPerformed
@@ -1049,7 +1258,7 @@ public class MusicPlayerGUI extends javax.swing.JFrame
 
     private void btnViewPlaylist2ActionPerformed(java.awt.event.ActionEvent evt)//GEN-FIRST:event_btnViewPlaylist2ActionPerformed
     {//GEN-HEADEREND:event_btnViewPlaylist2ActionPerformed
-        // TODO add your handling code here:
+        switchTable(playlist2, playlist2ScrollPane);
     }//GEN-LAST:event_btnViewPlaylist2ActionPerformed
 
     private void btnViewAllActionPerformed(java.awt.event.ActionEvent evt)//GEN-FIRST:event_btnViewAllActionPerformed
@@ -1129,14 +1338,18 @@ public class MusicPlayerGUI extends javax.swing.JFrame
             pnlAddSong.setVisible(false);
             
             tfSongName.setText("");
+            
+            active = true;
+            updatePlaylistLabel();
         }
-        
     }//GEN-LAST:event_btnFinalAddActionPerformed
 
+    
     private void btnFinalCancelActionPerformed(java.awt.event.ActionEvent evt)//GEN-FIRST:event_btnFinalCancelActionPerformed
     {//GEN-HEADEREND:event_btnFinalCancelActionPerformed
         tfSongName.setText("");
         pnlAddSong.setVisible(false);
+        active = true;
     }//GEN-LAST:event_btnFinalCancelActionPerformed
 
     private void jLayeredPane1KeyPressed(java.awt.event.KeyEvent evt)//GEN-FIRST:event_jLayeredPane1KeyPressed
@@ -1144,18 +1357,191 @@ public class MusicPlayerGUI extends javax.swing.JFrame
 
     }//GEN-LAST:event_jLayeredPane1KeyPressed
 
-    private void checkDllActionPerformed(java.awt.event.ActionEvent evt)//GEN-FIRST:event_checkDllActionPerformed
-    {//GEN-HEADEREND:event_checkDllActionPerformed
-        System.out.println(dllAllSongs.printList());
-    }//GEN-LAST:event_checkDllActionPerformed
-
     private void btnFinishDeleteActionPerformed(java.awt.event.ActionEvent evt)//GEN-FIRST:event_btnFinishDeleteActionPerformed
     {//GEN-HEADEREND:event_btnFinishDeleteActionPerformed
         lblDeleteHelp.setVisible(false);
         lblPlaylistName.setVisible(true);
         btnFinishDelete.setVisible(false);
         deleteMode = false;
+        if (currPlaylist == likedPlaylist)
+        {
+            btnAddToPlaylist.setVisible(true);
+        }
     }//GEN-LAST:event_btnFinishDeleteActionPerformed
+
+    private void btnAddToPlaylist1ActionPerformed(java.awt.event.ActionEvent evt)//GEN-FIRST:event_btnAddToPlaylist1ActionPerformed
+    {//GEN-HEADEREND:event_btnAddToPlaylist1ActionPerformed
+        String[] song = likedSongs.getValue(0);
+        if (playlist1.getRowCount() < 1)
+        {
+            playlist1Genre = song[1];
+        }
+        if (playlist1Genre.equals(song[1]))
+        {
+            StackInterface stack;
+            if (searchActive)
+            {
+                stack = likedSongsSearch;
+                likedSongs.remove(song);
+            }
+            else
+            {
+                stack = likedSongs;
+            }
+            String[] songInfo = getSongInfo(likedPlaylist, song);
+            addNewTableRow(songInfo, playlist1);
+            pnlPlaylistPrompt.setVisible(false);
+            stack.pop();
+            updateTable(likedPlaylist, searchActive);
+            String data = getValueAtRow(0, playlist1);
+            String oldData = data + "%<html><b>[Remove <br>from Liked]</b></html>";
+            String newData = data + "%<html><b>[Playlist 1]</></>";
+            dllAllSongs.replace(oldData, newData);
+        }
+        else
+        {
+            JOptionPane.showMessageDialog(pnlPlaylistPrompt, "<html><h1>Song must be in same genre! (" + playlist1Genre + ") </></>");
+        }
+    }//GEN-LAST:event_btnAddToPlaylist1ActionPerformed
+
+    private void btnAddPlaylistCancelActionPerformed(java.awt.event.ActionEvent evt)//GEN-FIRST:event_btnAddPlaylistCancelActionPerformed
+    {//GEN-HEADEREND:event_btnAddPlaylistCancelActionPerformed
+        pnlPlaylistPrompt.setVisible(false);
+        active = true;
+    }//GEN-LAST:event_btnAddPlaylistCancelActionPerformed
+
+    private void btnAddToPlaylistActionPerformed(java.awt.event.ActionEvent evt)//GEN-FIRST:event_btnAddToPlaylistActionPerformed
+    {//GEN-HEADEREND:event_btnAddToPlaylistActionPerformed
+        pnlPlaylistPrompt.setVisible(true);
+    }//GEN-LAST:event_btnAddToPlaylistActionPerformed
+
+    private void btnAddToPlaylist2ActionPerformed(java.awt.event.ActionEvent evt)//GEN-FIRST:event_btnAddToPlaylist2ActionPerformed
+    {//GEN-HEADEREND:event_btnAddToPlaylist2ActionPerformed
+        String[] song = likedSongs.getValue(0);
+        if (playlist2.getRowCount() < 1)
+        {
+            playlist2Genre = song[1];
+        }
+        if (playlist2Genre.equals(song[1]))
+        {
+            StackInterface stack;
+            if (searchActive)
+            {
+                stack = likedSongsSearch;
+                likedSongs.remove(song);
+            }
+            else
+            {
+                stack = likedSongs;
+            }
+            String[] songInfo = getSongInfo(likedPlaylist, song);
+            addNewTableRow(songInfo, playlist2);
+            pnlPlaylistPrompt.setVisible(false);
+            stack.pop();
+            updateTable(likedPlaylist, searchActive);
+            String data = getValueAtRow(0, playlist2);
+            String oldData = data + "%<html><b>[Remove <br>from Liked]</b></html>";
+            String newData = data + "%<html><b>[Playlist 2]</></>";
+            dllAllSongs.replace(oldData, newData);
+        }
+        else
+        {
+            JOptionPane.showMessageDialog(pnlPlaylistPrompt, "<html><h1>Song must be in same genre! (" + playlist1Genre + ") </></>");
+        }
+    }//GEN-LAST:event_btnAddToPlaylist2ActionPerformed
+
+    private void btnPlayActionPerformed(java.awt.event.ActionEvent evt)//GEN-FIRST:event_btnPlayActionPerformed
+    {//GEN-HEADEREND:event_btnPlayActionPerformed
+        if (active)
+        {
+            if (!songPlaying)
+            {
+                if (currPlaylist.getRowCount() > 0)
+                {
+                    String name = currPlaylist.getValueAt(0, 0).toString();
+                    lblSongPlaying.setText(name);
+                    lblSongPlaying.setVisible(true);
+                    lblPlaying.setVisible(true);
+                    btnPlay.setIcon(new ImageIcon("src/musicplayer/Stop.png"));
+                    songPlaying = true;
+                }
+            }
+            else
+            {
+                lblPlaying.setVisible(false);
+                lblSongPlaying.setVisible(false);
+                btnPlay.setIcon(new ImageIcon("src/musicplayer/Play.png"));
+                songPlaying = false;
+            }
+        }
+    }//GEN-LAST:event_btnPlayActionPerformed
+
+    private void btnNextActionPerformed(java.awt.event.ActionEvent evt)//GEN-FIRST:event_btnNextActionPerformed
+    {//GEN-HEADEREND:event_btnNextActionPerformed
+        if (active)
+        {
+            if (songPlaying)
+            {
+                String name = lblSongPlaying.getText();
+                name = getValueAtRow(find(currPlaylist, name), currPlaylist);
+                
+                int index = whichTableDll(searchActive).getNextQueue(whichTableDll(searchActive).getIndex(name));
+                name = currPlaylist.getValueAt(index - 1, 0).toString();
+                lblSongPlaying.setText(name);
+            }
+            else
+            {
+                btnPlayActionPerformed(null);
+            }
+        }
+    }//GEN-LAST:event_btnNextActionPerformed
+
+    private void btnLastActionPerformed(java.awt.event.ActionEvent evt)//GEN-FIRST:event_btnLastActionPerformed
+    {//GEN-HEADEREND:event_btnLastActionPerformed
+        if (active)
+        {
+            if (songPlaying)
+            {
+                String name = lblSongPlaying.getText();
+                name = getValueAtRow(find(currPlaylist, name), currPlaylist);
+                
+                int index = whichTableDll(searchActive).getPrevQueue(whichTableDll(searchActive).getIndex(name));
+                name = currPlaylist.getValueAt(index - 1, 0).toString();
+                lblSongPlaying.setText(name);
+            }
+            else
+            {
+                btnPlayActionPerformed(null);
+            }
+        }
+    }//GEN-LAST:event_btnLastActionPerformed
+
+    private void btnRepeatActionPerformed(java.awt.event.ActionEvent evt)//GEN-FIRST:event_btnRepeatActionPerformed
+    {//GEN-HEADEREND:event_btnRepeatActionPerformed
+        if (songPlaying)
+        {
+            String name = lblSongPlaying.getText();
+            btnRepeat.setIcon(new ImageIcon("src/musicplayer/repeatOn.png"));
+            int loop = 0;
+            
+            while (loop < 3)
+            {
+                btnNextActionPerformed(null);
+                String currSong = lblSongPlaying.getText();
+                if (name.equals(currSong))
+                {
+                    loop++;
+                }
+                System.out.println(currSong);
+            }
+            btnRepeat.setIcon(new ImageIcon("src/musicplayer/repeatOff.png"));
+        }
+        else
+        {
+            btnPlayActionPerformed(null);
+            btnRepeatActionPerformed(null);
+        }
+    }//GEN-LAST:event_btnRepeatActionPerformed
 
     /**
      * @param args the command line arguments
@@ -1203,7 +1589,9 @@ public class MusicPlayerGUI extends javax.swing.JFrame
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JButton btnAddPlaylistCancel;
     private javax.swing.JButton btnAddSong;
+    private javax.swing.JButton btnAddToPlaylist;
     private javax.swing.JButton btnAddToPlaylist1;
     private javax.swing.JButton btnAddToPlaylist2;
     private javax.swing.JButton btnCloseMenu;
@@ -1211,14 +1599,17 @@ public class MusicPlayerGUI extends javax.swing.JFrame
     private javax.swing.JButton btnFinalAdd;
     private javax.swing.JButton btnFinalCancel;
     private javax.swing.JButton btnFinishDelete;
+    private javax.swing.JButton btnLast;
     private javax.swing.JButton btnMenu;
+    private javax.swing.JButton btnNext;
+    private javax.swing.JButton btnPlay;
+    private javax.swing.JButton btnRepeat;
     private javax.swing.JButton btnSearch;
     private javax.swing.JButton btnViewAll;
     private javax.swing.JButton btnViewLiked;
     private javax.swing.JButton btnViewPlaylist1;
     private javax.swing.JButton btnViewPlaylist2;
     private javax.swing.JComboBox<String> cbbGenre;
-    private javax.swing.JButton checkDll;
     private javax.swing.JTable defaultPlaylist;
     private javax.swing.JScrollPane defaultPlaylistScrollPane;
     private javax.swing.JLayeredPane jLayeredPane1;
@@ -1226,11 +1617,15 @@ public class MusicPlayerGUI extends javax.swing.JFrame
     private javax.swing.JLabel lblDeleteHelp;
     private javax.swing.JLabel lblGenre;
     private javax.swing.JLabel lblName;
+    private javax.swing.JLabel lblPlaying;
     private javax.swing.JLabel lblPlaylistName;
+    private javax.swing.JLabel lblSongPlaying;
     private javax.swing.JScrollPane likePlaylistScrollPane;
     private javax.swing.JTable likedPlaylist;
     private javax.swing.JTable playlist1;
     private javax.swing.JScrollPane playlist1ScrollPane;
+    private javax.swing.JTable playlist2;
+    private javax.swing.JScrollPane playlist2ScrollPane;
     private javax.swing.JPanel pnlAddSong;
     private javax.swing.JPanel pnlMenu;
     private javax.swing.JPanel pnlPlaySection;

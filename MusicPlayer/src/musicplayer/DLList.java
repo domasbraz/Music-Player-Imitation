@@ -273,6 +273,26 @@ public class DLList implements LinearListInterface
         
         return name;
     }
+    
+    public int getNextQueue(int index)
+    {
+        setCurrent(index);
+        if (currNode.getNext() == null)
+        {
+            return 1;
+        }
+        return index + 1;
+    }
+    
+    public int getPrevQueue(int index)
+    {
+        setCurrent(index);
+        if (currNode.getPrev() == null)
+        {
+            return iSize;
+        }
+        return index - 1;
+    }
 }
 
 

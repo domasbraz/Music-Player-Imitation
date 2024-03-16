@@ -38,4 +38,8 @@ public interface LinearListInterface {
     public void removeAll();
     
     public String printItem(int index);
+    
+    public int getNextQueue(int index);
+    
+    public int getPrevQueue(int index);
 }
