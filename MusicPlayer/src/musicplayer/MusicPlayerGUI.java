@@ -1539,7 +1539,10 @@ public class MusicPlayerGUI extends javax.swing.JFrame
         else
         {
             btnPlayActionPerformed(null);
-            btnRepeatActionPerformed(null);
+            if (songPlaying)
+            {
+                btnRepeatActionPerformed(null);
+            }
         }
     }//GEN-LAST:event_btnRepeatActionPerformed
 
