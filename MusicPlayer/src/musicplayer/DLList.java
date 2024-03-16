@@ -186,6 +186,7 @@ public class DLList implements LinearListInterface
     
     
     //added code by Domas Brazdeikis
+    //gets index via node name
     public int getIndex(String name)
     {
         int index = 1;
@@ -200,6 +201,7 @@ public class DLList implements LinearListInterface
         return 0;
     }
     
+    //send a node forward in the list
     public void sendForward(String name)
     {
         int index = getIndex(name);
@@ -215,21 +217,8 @@ public class DLList implements LinearListInterface
         }
 
     }
-    
-//    public void sendForward(int index)
-//    {
-//        setCurrent(index);
-//        remove(index);
-//        if (currNode == null)
-//        {
-//            add(index, currNode.toString());
-//        }
-//        else
-//        {
-//            add((index + 1), currNode.toString());
-//        }
-//    }
-    
+
+    //sends a node backwards in the list
     public void sendBackward(String name)
     {
         int index = getIndex(name);
@@ -246,6 +235,7 @@ public class DLList implements LinearListInterface
         
     }
     
+    //replaces a node with a new node
     public void replace(String oldName, String newName)
     {
         int index = getIndex(oldName);
@@ -254,6 +244,7 @@ public class DLList implements LinearListInterface
         add(index, newName);
     }
     
+    //removes all nodes
     public void removeAll()
     {
         while (!isEmpty())
@@ -262,6 +253,7 @@ public class DLList implements LinearListInterface
         }
     }
     
+    //prints the as a string from given index
     public String printItem(int index)
     {
         DlNode node = head;
@@ -274,6 +266,7 @@ public class DLList implements LinearListInterface
         return name;
     }
     
+    //returns the next index of given index
     public int getNextQueue(int index)
     {
         setCurrent(index);
@@ -284,6 +277,7 @@ public class DLList implements LinearListInterface
         return index + 1;
     }
     
+    //returns previous index of given index
     public int getPrevQueue(int index)
     {
         setCurrent(index);

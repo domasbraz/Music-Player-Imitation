@@ -48,14 +48,11 @@ public class MusicPlayerGUI extends javax.swing.JFrame
     private String playlist1Genre;
     private String playlist2Genre;
     private boolean songPlaying = false;
-    private boolean repeat = false;
     
     
     public MusicPlayerGUI()
     {
         defaultMethod();
-
-        
     }
 
     public void defaultMethod()
@@ -71,15 +68,18 @@ public class MusicPlayerGUI extends javax.swing.JFrame
         lblPlaylistName.setText("All Songs");
         currContainer = defaultPlaylistScrollPane;
         
+        //changes column size of second column to fit text in cell
         TableColumnModel columnModel = defaultPlaylist.getColumnModel();
         columnModel.getColumn(1).setPreferredWidth(50);
         
+        //adds images to buttons at the bottom panel
         btnPlay.setIcon(new ImageIcon("src/musicplayer/Play.png"));
         btnNext.setIcon(new ImageIcon("src/musicplayer/next.png"));
         btnLast.setIcon(new ImageIcon("src/musicplayer/last.png"));
         btnRepeat.setIcon(new ImageIcon("src/musicplayer/repeatOff.png"));
     }
     
+    //hides gui elements on startup
     public void hideElements()
     {
         pnlMenu.setVisible(false);
@@ -95,6 +95,7 @@ public class MusicPlayerGUI extends javax.swing.JFrame
         lblSongPlaying.setVisible(false);
     }
     
+    //custom table models for referencing purposes (models applied via "custom code" option in table settings)
     public void makeTableModels()
     {
         defaultPlaylistTableModel = new DefaultTableModel(
@@ -133,27 +134,26 @@ public class MusicPlayerGUI extends javax.swing.JFrame
         
     }
     
+    //prevents user from changing the tables
     public void disableTableEditing()
     {
+        //tables added to playlist list via "custom code" option in table
         for (JTable table : playlists)
         {
             for (int i = 0; i < table.getColumnCount(); i++) 
             {
                 TableColumn column = table.getColumnModel().getColumn(i);
+                //prevents resizing of columns
                 column.setResizable(false);
             }
+            //prevents repositining of columns
             table.getTableHeader().setReorderingAllowed(false);
+            //prevents user from editing values of the cells
             table.setDefaultEditor(Object.class, null); 
         }
-        
-//        for (int i = 0; i < defaultPlaylist.getColumnCount(); i++) {
-//            TableColumn column = defaultPlaylist.getColumnModel().getColumn(i);
-//            column.setResizable(false);
-//        }
-//        defaultPlaylist.getTableHeader().setReorderingAllowed(false);
-//        defaultPlaylist.setDefaultEditor(Object.class, null); 
     }
     
+    //adds event listener to each table
     public void applyTableInteractions()
     {
         for (JTable table : playlists)
@@ -162,6 +162,7 @@ public class MusicPlayerGUI extends javax.swing.JFrame
         }
     }
     
+    //adds mouse click event to table
     //ref: https://gist.github.com/nis4273/c01c4e339b557f965797
     public void addEventListenerToTable(JTable table)
     {
@@ -180,22 +181,15 @@ public class MusicPlayerGUI extends javax.swing.JFrame
         });
     }
     
+    //adds new row of data to table, adds data to linked list
     public void addNewTableRow(String[] data, JTable table)
     {
         DefaultTableModel tableModel = (DefaultTableModel) table.getModel();
         tableModel.addRow(data);
         linkTable(data, table);
-        
-//        switch (table)
-//        {
-//            case "default":
-//                defaultPlaylistTableModel.addRow(data);
-//                linkTable(data);
-//                break;
-//        }
-        
     }
     
+    //checks if song name already exists in the list
     public boolean isSongNameTaken(String name)
     {
         for (int x = dllAllSongs.size(); x > 0; x--)
@@ -209,10 +203,13 @@ public class MusicPlayerGUI extends javax.swing.JFrame
         return false;
     }
     
+    //search function
     public void searchName(String name, JTable table)
     {
+        //checks if player has another search query active
         if (searchActive)
         {
+            //resets sarch info
             updateTable(table, false);
             clearSearch();
             searchName(name, table);
@@ -225,24 +222,34 @@ public class MusicPlayerGUI extends javax.swing.JFrame
 
             Pattern pattern = Pattern.compile(name, Pattern.CASE_INSENSITIVE);
 
+            //loops through table via row count
             while (rows > 0)
             {
                 rows--;
+                //compares patern to song name at current row of loop
                 Matcher matcher = pattern.matcher(table.getValueAt(rows , 0).toString());
+                //if a match is not found then the row is removed
                 if (!(matcher.find()))
                 {
                     tableModel.removeRow(rows);
                 }
             }
+            //updates row count
             rows = tableModel.getRowCount();
+            //loops though table
             for (int x = 0; x < rows; x++)
             {
+                //gets the row information
                 String data = "";
                 data += table.getValueAt(x, 0) + "%";
                 data += table.getValueAt(x, 1) + "%";
                 data += table.getValueAt(x, 2) ;
+                //slightly different structure for liked playlist, hence this condition
                 if (currPlaylist != likedPlaylist)
                 {
+                    //assigns information to seperate list
+                    //a temporary list that can affect the permanent list by removing data, etc.
+                    //this list also allows the user to rearange the temperary list with affecting the permenent list
                     whichTableDll(true).add(x + 1, data);
                 }
                 else
@@ -257,6 +264,7 @@ public class MusicPlayerGUI extends javax.swing.JFrame
 
     }
     
+    //discards temperary search list
     public void clearSearch()
     {
         if (currPlaylist != likedPlaylist)
@@ -271,11 +279,12 @@ public class MusicPlayerGUI extends javax.swing.JFrame
     }
     
 
-    
+    //returns the linked list based on current playlist
     public LinearListInterface whichTableDll(boolean isSearchDll)
     {
         if (currPlaylist == defaultPlaylist)
         {
+            //shorthand if statemnet
             return isSearchDll ? dllAllSongsSearch : dllAllSongs;
         }
         if (currPlaylist == likedPlaylist)
@@ -286,22 +295,29 @@ public class MusicPlayerGUI extends javax.swing.JFrame
         {
             return isSearchDll ? dllPlaylist1Search : dllPlaylist1;
         }
+        if (currPlaylist == playlist2)
+        {
+            return isSearchDll ? dllPlaylist2Search : dllPlaylist2;
+        }
         
         //this statement should never be executed
         return null;
     }
     
+    //updates values in given table
     public void updateTable(JTable table, boolean search)
     {
         DefaultTableModel tableModel = (DefaultTableModel) table.getModel();
-        
+        //liked playlist uses different ADT, hence this condition
         if (!(table == likedPlaylist))
         {
             if (search)
             {
                 LinearListInterface dll = whichTableDll(true);
+                //discards current table data
                 emptyTable(table);
 
+                //repopulates table from linked list
                 for (int x = 0; x < dll.size(); x++)
                 {
                     String[] song = dll.printItem(x + 1).split("%");
@@ -354,12 +370,13 @@ public class MusicPlayerGUI extends javax.swing.JFrame
                 }
             }
         }
+        //updates song count and playlist name
         updatePlaylistLabel();
     }
     
+    //retrives relevent data based on table
     public String[] getSongInfo(JTable table, String[] song)
     {
-        
         if (table == defaultPlaylist)
         {
             return new String[] {song[0], song[1], song[2], "<html><b>[Up]</b></html>", "<html><b>[Down]</b></html>"};
@@ -368,12 +385,9 @@ public class MusicPlayerGUI extends javax.swing.JFrame
         {
             return new String[] {song[0], song[1], "<html><b>[Remove]</></>", "<html><b>[Up]</b></html>", "<html><b>[Down]</b></html>"};
         }
-        
-        
-        
-        
     }
     
+    //discards all data in given table
     public void emptyTable(JTable table)
     {
         DefaultTableModel tableModel = (DefaultTableModel) table.getModel();
@@ -384,10 +398,12 @@ public class MusicPlayerGUI extends javax.swing.JFrame
         }
     }
     
+    //adds new data to linked list
     public void linkTable(String[] data, JTable table)
     {
         int songCount = table.getRowCount();
         String item;
+        //slightly different structure in default playlist, hence this condition
         if (table == defaultPlaylist)
         {
             item = data[0] +  "%" + data[1] + "%" + data[2];
@@ -399,6 +415,7 @@ public class MusicPlayerGUI extends javax.swing.JFrame
         whichTableDll(false).add(songCount, item);
     }
     
+    //gets relevant data info from given table and row
     public String getValueAtRow(int row, JTable table)
     {
         String data = table.getValueAt(row, 0).toString() + "%";
@@ -410,36 +427,42 @@ public class MusicPlayerGUI extends javax.swing.JFrame
         return data;
     }
     
+    //sets table interaction events
     public void tableInteraction(int row, int col, JTable table)
     {
+        //this variable is changed via various event to decide whether the user should be able to interact with the table
         if (active)
         {
             if (!deleteMode)
             {
                 String value = table.getValueAt(row, col).toString();
-
+                //various conditions checking if the cell the user clicked on should perfrom an event
+                //adding song to liked playlist
                 if (value.equalsIgnoreCase("<html><b>[Like]</b></html>") || value.equalsIgnoreCase("<html><b>[Remove <br>from Liked]</b></html>"))
                 {
                     likeSongOperation(value, row, col, table);
                 }
-
+                //moving song up in table and list
                 else if (value.equalsIgnoreCase("<html><b>[Up]</b></html>"))
                 {
                     String name = getValueAtRow(row, table);
                     moveSongUp(name);
                     updateTable(table, searchActive);
                 }
+                //moving song down in table and list
                 else if (value.equalsIgnoreCase("<html><b>[Down]</b></html>"))
                 {
                     String name = getValueAtRow(row, table);
                     moveSongDown(name);
                     updateTable(table, searchActive);
                 }
+                //remove a song from current playlist
                 else if (value.equalsIgnoreCase("<html><b>[Remove]</></>"))
                 {
                     String name = getValueAtRow(row, table);
                     if (searchActive)
                     {
+                        //removes song from temperary search list
                         LinearListInterface dllSearch = whichTableDll(true);
                         dllSearch.remove(dllSearch.getIndex(name));
                     }
@@ -453,6 +476,7 @@ public class MusicPlayerGUI extends javax.swing.JFrame
                     
                     dllAllSongs.replace(oldName, newName);
                 }
+                //redirects to the playlist
                 else if (value.equalsIgnoreCase("<html><b>[Playlist 1]</></>"))
                 {
                     switchTable(playlist1, playlist1ScrollPane);
@@ -471,21 +495,26 @@ public class MusicPlayerGUI extends javax.swing.JFrame
         
     }
     
+    //adds song to liked playlist
     public void likeSongOperation(String value, int row, int col, JTable table)
     {
+        //checks if the song is not already in liked playlist
         if (value.equalsIgnoreCase("<html><b>[Like]</b></html>"))
         {
             likeSong(row);
             String oldData = getValueAtRow(row, table);
+            //changes cell name for functionality purposes
             table.setValueAt("<html><b>[Remove <br>from Liked]</b></html>", row, col);
             String newData = getValueAtRow(row, table);
             whichTableDll(false).replace(oldData, newData);
         }
+        //checks if song is already in liked playlist
         else if (value.equalsIgnoreCase("<html><b>[Remove <br>from Liked]</b></html>"))
         {
             String[] name = new String[2];
             name[0] = table.getValueAt(row, 0).toString();
             name[1] = table.getValueAt(row, 1).toString();
+            //removes from liked playlist
             removeFromLiked(name);
             String oldData = getValueAtRow(row, table);
             table.setValueAt("<html><b>[Like]</b></html>", row, col);
@@ -495,6 +524,7 @@ public class MusicPlayerGUI extends javax.swing.JFrame
         }
     }
     
+    //adds data to stack
     public void likeSong(int row)
     {
         String[] data = new String[2];
@@ -515,25 +545,16 @@ public class MusicPlayerGUI extends javax.swing.JFrame
     
     public void moveSongUp(String name)
     {
-        whichTableDll(false).sendBackward(name);
-        
-        if (searchActive)
-        {
-            whichTableDll(true).sendBackward(name);
-        }
-        
+        whichTableDll(searchActive).sendBackward(name);
     }
     
     public void moveSongDown(String name)
     {
-        whichTableDll(false).sendForward(name);
-        
-        if (searchActive)
-        {
-            whichTableDll(true).sendForward(name);
-        }
+        whichTableDll(searchActive).sendForward(name);
     }
     
+    //checks if song name has an invalid character
+    //"%" symbol used to split data for easy retrieval
     public boolean doesNameHaveInvalidChar(String name)
     {
         Pattern pattern = Pattern.compile("%");
@@ -541,6 +562,7 @@ public class MusicPlayerGUI extends javax.swing.JFrame
         return matcher.find();
     }
     
+    //checks if the table has data
     public boolean hasSongs(JTable table)
     {
         return (table.getRowCount() > 0);
@@ -557,11 +579,13 @@ public class MusicPlayerGUI extends javax.swing.JFrame
             name = nameArray[0] + "%" + nameArray[1] + nameArray[2];
         }
         
-        
+        //deletes song from all lists if present
         dllAllSongs.remove(dllAllSongs.getIndex(name));
         dllAllSongsSearch.remove(dllAllSongsSearch.getIndex(name));
         dllPlaylist1.remove(dllPlaylist1.getIndex(name));
+        dllPlaylist1Search.remove(dllPlaylist1Search.getIndex(name));
         dllPlaylist2.remove(dllPlaylist2.getIndex(name));
+        dllPlaylist2Search.remove(dllPlaylist2Search.getIndex(name));
 
         String[] data = new String[2];
         data[0] = name.split("%")[0];
@@ -572,6 +596,7 @@ public class MusicPlayerGUI extends javax.swing.JFrame
         updateTable(currPlaylist, searchActive);
     }
     
+    //switches between tables/playlists
     public void switchTable(JTable table, JScrollPane container)
     {
         pnlMenu.setVisible(false);
@@ -588,6 +613,7 @@ public class MusicPlayerGUI extends javax.swing.JFrame
 
     }
     
+    //updates playlist name and song count
     public void updatePlaylistLabel()
     {
         if (currPlaylist == defaultPlaylist)
@@ -609,6 +635,7 @@ public class MusicPlayerGUI extends javax.swing.JFrame
         
     }
     
+    //finds table row if name is present
     public int find (JTable table, String name)
     {
         for (int x = 0; x < table.getRowCount(); x++)
@@ -1225,6 +1252,7 @@ public class MusicPlayerGUI extends javax.swing.JFrame
     private void btnMenuActionPerformed(java.awt.event.ActionEvent evt)//GEN-FIRST:event_btnMenuActionPerformed
     {//GEN-HEADEREND:event_btnMenuActionPerformed
         pnlMenu.setVisible(true);
+        //exits delete mode
         btnFinishDeleteActionPerformed(null);
     }//GEN-LAST:event_btnMenuActionPerformed
 
@@ -1235,7 +1263,6 @@ public class MusicPlayerGUI extends javax.swing.JFrame
 
     private void btnAddSongActionPerformed(java.awt.event.ActionEvent evt)//GEN-FIRST:event_btnAddSongActionPerformed
     {//GEN-HEADEREND:event_btnAddSongActionPerformed
-        // TODO add your handling code here:
         pnlMenu.setVisible(false);
         pnlAddSong.setVisible(true);
         active = false;
@@ -1243,6 +1270,7 @@ public class MusicPlayerGUI extends javax.swing.JFrame
 
     private void btnViewLikedActionPerformed(java.awt.event.ActionEvent evt)//GEN-FIRST:event_btnViewLikedActionPerformed
     {//GEN-HEADEREND:event_btnViewLikedActionPerformed
+        //only updates if the the user is not currently viewing the playlist
         if (currPlaylist != likedPlaylist || searchActive)
         {
             switchTable(likedPlaylist, likePlaylistScrollPane);
@@ -1253,19 +1281,24 @@ public class MusicPlayerGUI extends javax.swing.JFrame
 
     private void btnViewPlaylist1ActionPerformed(java.awt.event.ActionEvent evt)//GEN-FIRST:event_btnViewPlaylist1ActionPerformed
     {//GEN-HEADEREND:event_btnViewPlaylist1ActionPerformed
-        switchTable(playlist1, playlist1ScrollPane);
+        if (currPlaylist != playlist1 || searchActive)
+        {
+            switchTable(playlist1, playlist1ScrollPane);
+        }
     }//GEN-LAST:event_btnViewPlaylist1ActionPerformed
 
     private void btnViewPlaylist2ActionPerformed(java.awt.event.ActionEvent evt)//GEN-FIRST:event_btnViewPlaylist2ActionPerformed
     {//GEN-HEADEREND:event_btnViewPlaylist2ActionPerformed
-        switchTable(playlist2, playlist2ScrollPane);
+        if (currPlaylist != playlist2 || searchActive)
+        {
+            switchTable(playlist2, playlist2ScrollPane);
+        }
     }//GEN-LAST:event_btnViewPlaylist2ActionPerformed
 
     private void btnViewAllActionPerformed(java.awt.event.ActionEvent evt)//GEN-FIRST:event_btnViewAllActionPerformed
     {//GEN-HEADEREND:event_btnViewAllActionPerformed
         if (currPlaylist != defaultPlaylist || searchActive)
         {
-            clearSearch();
             switchTable(defaultPlaylist, defaultPlaylistScrollPane);
         }
         pnlMenu.setVisible(false);
@@ -1281,7 +1314,6 @@ public class MusicPlayerGUI extends javax.swing.JFrame
             {
                 searchName(name, currPlaylist);
             }
-            
         }
         else
         {
@@ -1310,6 +1342,7 @@ public class MusicPlayerGUI extends javax.swing.JFrame
         // TODO add your handling code here:
     }//GEN-LAST:event_cbbGenreActionPerformed
 
+    //adds new song
     private void btnFinalAddActionPerformed(java.awt.event.ActionEvent evt)//GEN-FIRST:event_btnFinalAddActionPerformed
     {//GEN-HEADEREND:event_btnFinalAddActionPerformed
         String songName = tfSongName.getText();
@@ -1372,10 +1405,12 @@ public class MusicPlayerGUI extends javax.swing.JFrame
     private void btnAddToPlaylist1ActionPerformed(java.awt.event.ActionEvent evt)//GEN-FIRST:event_btnAddToPlaylist1ActionPerformed
     {//GEN-HEADEREND:event_btnAddToPlaylist1ActionPerformed
         String[] song = likedSongs.getValue(0);
+        //checks if table is empty
         if (playlist1.getRowCount() < 1)
         {
             playlist1Genre = song[1];
         }
+        //checks if song matches genre of playlist
         if (playlist1Genre.equals(song[1]))
         {
             StackInterface stack;
@@ -1454,20 +1489,26 @@ public class MusicPlayerGUI extends javax.swing.JFrame
     {//GEN-HEADEREND:event_btnPlayActionPerformed
         if (active)
         {
+            //checks if song is already playing
             if (!songPlaying)
             {
+                //checks if playlist has songs
                 if (currPlaylist.getRowCount() > 0)
                 {
+                    //plays the first songs of the playlist
                     String name = currPlaylist.getValueAt(0, 0).toString();
+                    //displays song name
                     lblSongPlaying.setText(name);
                     lblSongPlaying.setVisible(true);
                     lblPlaying.setVisible(true);
+                    //changes image
                     btnPlay.setIcon(new ImageIcon("src/musicplayer/Stop.png"));
                     songPlaying = true;
                 }
             }
             else
             {
+                //hides currently playing song
                 lblPlaying.setVisible(false);
                 lblSongPlaying.setVisible(false);
                 btnPlay.setIcon(new ImageIcon("src/musicplayer/Play.png"));
@@ -1476,6 +1517,7 @@ public class MusicPlayerGUI extends javax.swing.JFrame
         }
     }//GEN-LAST:event_btnPlayActionPerformed
 
+    //plays next song in list
     private void btnNextActionPerformed(java.awt.event.ActionEvent evt)//GEN-FIRST:event_btnNextActionPerformed
     {//GEN-HEADEREND:event_btnNextActionPerformed
         if (active)
@@ -1491,11 +1533,13 @@ public class MusicPlayerGUI extends javax.swing.JFrame
             }
             else
             {
+                //plays first song if none are playing
                 btnPlayActionPerformed(null);
             }
         }
     }//GEN-LAST:event_btnNextActionPerformed
 
+    //plays previous song in list
     private void btnLastActionPerformed(java.awt.event.ActionEvent evt)//GEN-FIRST:event_btnLastActionPerformed
     {//GEN-HEADEREND:event_btnLastActionPerformed
         if (active)
@@ -1516,6 +1560,7 @@ public class MusicPlayerGUI extends javax.swing.JFrame
         }
     }//GEN-LAST:event_btnLastActionPerformed
 
+    //loops through current playlist 3 times
     private void btnRepeatActionPerformed(java.awt.event.ActionEvent evt)//GEN-FIRST:event_btnRepeatActionPerformed
     {//GEN-HEADEREND:event_btnRepeatActionPerformed
         if (songPlaying)
@@ -1532,6 +1577,7 @@ public class MusicPlayerGUI extends javax.swing.JFrame
                 {
                     loop++;
                 }
+                //this is the only way i can show proof of this method working without the use of a timer
                 System.out.println(currSong);
             }
             btnRepeat.setIcon(new ImageIcon("src/musicplayer/repeatOff.png"));
