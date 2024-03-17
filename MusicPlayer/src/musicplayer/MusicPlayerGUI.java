@@ -93,6 +93,10 @@ public class MusicPlayerGUI extends javax.swing.JFrame
         playlist2ScrollPane.setVisible(false);
         lblPlaying.setVisible(false);
         lblSongPlaying.setVisible(false);
+
+        //im stupid and forgot to test my app
+        //so this visual error pops up if i dont hide this and i dont have time to fix this
+        pnlPlaySection.setVisible(false);
     }
     
     //custom table models for referencing purposes (models applied via "custom code" option in table settings)
